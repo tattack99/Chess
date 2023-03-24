@@ -2,6 +2,7 @@ package TJ.View;
 
 import TJ.Model.Board;
 import TJ.Model.Pieces.*;
+import javafx.geometry.Pos;
 import javafx.geometry.Rectangle2D;
 import javafx.scene.Scene;
 import javafx.scene.image.Image;
@@ -16,53 +17,28 @@ public class View{
     private final int WIDTH = 8;
     private final int HEIGHT = 8;
 
-    private GridPane gridPaneBoard;
     private final Board model;
+    private GridPane board;
+    private GridPane pieces;
     private final Stage primaryStage;
+
 
     public View(Board model, Stage primaryStage) {
         this.model = model;
         this.primaryStage = primaryStage;
-        start(model,primaryStage);
+        this.board = new GridPane();
     }
 
-    private void start(Board model, Stage primaryStage) {
-        gridPaneBoard = initBoard();
-        initPieces(model,gridPaneBoard);
-
-        Scene scene = new Scene(gridPaneBoard, WIDTH * TILE_SIZE, HEIGHT * TILE_SIZE);
+    public void init(){
+        board = initBoard();
+        pieces = initPieces();
+        Scene scene = new Scene(new StackPane(board,pieces), WIDTH * TILE_SIZE, HEIGHT * TILE_SIZE);
         primaryStage.setScene(scene);
         primaryStage.show();
     }
 
-    private void update(){
-        gridPaneBoard = updatePiecePos();
-        Scene scene = new Scene(gridPaneBoard, WIDTH * TILE_SIZE, HEIGHT * TILE_SIZE);
-        primaryStage.setScene(scene);
-        primaryStage.show();
-    }
 
-    private GridPane updatePiecePos(){
-        GridPane gridPane;
-        gridPane = initBoard();
-        initPieces(model, gridPane);
-        return gridPane;
-    }
-
-    private GridPane initPieces(Board model, GridPane board){
-        for(int i=0;i<8;i++){
-            for(int j=0;j<8;j++){
-                if(model.getCell(i,j).getPiece()!=null){
-                    board.add(getPieceImage(model.getCell(i,j).getPiece().getType(),
-                              model.getCell(i,j).getPiece().getTeam()),
-                              j,i);
-                }
-            }
-        }
-        return board;
-    }
-
-    private ImageView getPieceImage(Type type, Team team){
+    private ImageView getPiecePic(Type type, Team team){
         double color = 0;
         int piecePos = 0;
         if(team==Team.BLACK){color = 106.5;}
@@ -80,39 +56,44 @@ public class View{
         imageView.setFitHeight(80);
         imageView.setPickOnBounds(false);
 
-        int[] original = new int[2]; // to store the original x and y values
+        return imageView;
+    }
+
+    private ImageView getPieceImage(Type type, Team team){
+        ImageView imageView = getPiecePic(type, team);
+        imageView.setFitWidth(TILE_SIZE);
+        imageView.setFitHeight(TILE_SIZE);
+        imageView.setSmooth(true);
+        imageView.setCache(true);
+
+        int[] original = new int[2];
         imageView.setOnMousePressed(event -> {
-            System.out.println("I'm pressed! ");
-            // Record the original position of the piece
             original[0] = (int) (event.getSceneX() / TILE_SIZE);
             original[1] = (int) (event.getSceneY() / TILE_SIZE);
 
-            // Move the piece to the top of the z-order, so it appears above other pieces
+            // add transparent on the piece pressed
+            pieces.add(emptyPane(),original[0],original[1]);
+
             imageView.toFront();
         });
 
-
         imageView.setOnMouseReleased(event -> {
-            System.out.println("I'm released! ");
-            // Find the nearest valid square to the current position of the piece
-
-            // Calculate the difference between the current position and the original position
             int offsetX = (int) event.getSceneX() / TILE_SIZE;
             int offsetY = (int) event.getSceneY() / TILE_SIZE;
 
-            System.out.println("o[1]:" + original[1] + ", o[0]:" + original[0]+ ", offX:" + offsetX + ", offY:" + offsetY);
             model.move(original[1], original[0], offsetY, offsetX);
-            model.printBoard();
-            update();
-        });
+            ImageView piece = getPieceImage(type,team);
 
+            pieces.getChildren().remove(pieces.getChildren().size() - 1); // remove the transparent pane
+            pieces.add(piece,offsetX,offsetY); // add the moved piece to the new position
+        });
 
         return imageView;
     }
 
+
     private GridPane initBoard(){
         GridPane gridPane = new GridPane();
-        //gridPane.setMouseTransparent(true);
         for (int y = 0; y < HEIGHT; y++) {
             for (int x = 0; x < WIDTH; x++) {
                 Rectangle rectangle = new Rectangle(TILE_SIZE, TILE_SIZE);
@@ -126,4 +107,34 @@ public class View{
         }
         return gridPane;
     }
+
+    private GridPane initPieces(){
+        GridPane gridPane = new GridPane();
+
+        for(int i=0;i<HEIGHT;i++){
+            for(int j=0;j<WIDTH;j++){
+                if(model.getCell(i,j).getPiece()==null){
+                    gridPane.add(emptyPane(),j,i);
+                }
+                else{
+                    Type type = model.getCell(i,j).getPiece().getType();
+                    Team team = model.getCell(i,j).getPiece().getTeam();
+                    ImageView piece = getPieceImage(type,team);
+                    gridPane.add(piece,j,i);
+                }
+            }
+        }
+        return gridPane;
+
+    }
+
+    private Pane emptyPane(){
+        Pane empty = new Pane();
+        Rectangle rectangle = new Rectangle(TILE_SIZE,TILE_SIZE);
+        rectangle.setFill(Color.TRANSPARENT);
+        empty.getChildren().add(rectangle);
+        return empty;
+    }
+
+
 }

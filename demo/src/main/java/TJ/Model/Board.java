@@ -6,13 +6,10 @@ public class Board {
 
     private Cell[][] board;
 
-    private static int BOARD_SIZE = 8;
-
 
     public Board() {
-       board = new Cell[BOARD_SIZE][BOARD_SIZE];
-       reset(board);
-       printBoard();
+        int BOARD_SIZE = 8;
+        board = new Cell[BOARD_SIZE][BOARD_SIZE];
     }
 
     public void printBoard(){
@@ -23,9 +20,10 @@ public class Board {
         return board[row][col];
     }
 
-
-
-    private Cell[][] reset(Cell[][] board){
+    public Cell[][] init(){
+        return startPosition(board);
+    }
+    private Cell[][] startPosition(Cell[][] board){
         for(int i=0;i<board.length;i++){
             for(int j=0;j<board.length;j++){
                 board[i][j] = new Cell(null);
@@ -48,12 +46,10 @@ public class Board {
     }
 
     public boolean move(int row, int col, int newRow, int newCol){
-        System.out.println("row: " + row + ", col: " + col + ", newRow: " + newRow + ", newCol:" + newCol);
         if(board[row][col].getPiece()==null) return false;
-        System.out.println("outside");
+
         Piece p = board[row][col].getPiece();
         if(p.move(newRow,newCol)){
-            System.out.println("pRow: " + p.getRow() + ", pCol: " + p.getCol() + "");
             board[p.getRow()][p.getCol()].setPiece(p);
             board[row][col].setPiece(null);
             return true;
